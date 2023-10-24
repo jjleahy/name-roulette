@@ -3,13 +3,20 @@
 // flash on the screen that concludes with the name at the chosenIndex.
 // If sillyNames exists, occationally pick one an insert it as the
 // penultimate name.
+
+const sillyNames = config.sillyNames;
+const studentNames = config.names;
+let allNamesList = [...studentNames, ...sillyNames];
+
 function constructNames(chosenIndex, names, sillyNames) {
 	const LIST_LENGTH = 100;
-	let chooseSillyName = Math.random() > 0.8 && sillyNames.length;
+	let namesCopy = allNamesList.filter(studentName => names.includes(studentName));
+	let sillyNamesCopy = allNamesList.filter(studentName => sillyNames.includes(studentName));
+	let chooseSillyName = Math.random() > 0.8 && sillyNamesCopy.length;
 	let sillyName = '';
 	if (chooseSillyName) {
 		console.log('silly');
-		sillyName = sillyNames[Math.floor(Math.random() * sillyNames.length)];
+		sillyName = sillyNamesCopy[Math.floor(Math.random() * sillyNamesCopy.length)];
 	}
 
 	let sillyOffset = (i) => {
@@ -19,26 +26,45 @@ function constructNames(chosenIndex, names, sillyNames) {
 		if (i === LIST_LENGTH - 1) return 0; // leave the final name alone
 	}
 	
-	let indices = Array.from({length: LIST_LENGTH}, (_, i) => ((LIST_LENGTH - i + chosenIndex - 1 + sillyOffset(i)) % names.length));
-	return indices.map((index) => index < 0 ? sillyName : names[index]);
+	let indices = Array.from({length: LIST_LENGTH}, (_, i) => ((LIST_LENGTH - i + chosenIndex - 1 + sillyOffset(i)) % namesCopy.length));
+	return indices.map((index) => index < 0 ? sillyName : namesCopy[index]);
 }
 
 let title = document.querySelector('h1');
 
-function shuffle(names) {
+function shuffle(names, callback) {
 	title.innerText = names[0];
 	let pause = Math.max(17, 1000 / names.length); // get gradually slower as the names run out
 	let newNames = names.splice(1,names.length);
 	if (newNames.length) {
-		window.setTimeout(() => {shuffle(newNames)}, pause);
-	}
+		window.setTimeout(() => {
+            shuffle(newNames, callback);
+        }, pause);
+	}else {
+        callback(title.innerText); // Use the last name that was set to the title
+    }
+
 }
 
 
 let button = document.querySelector('#roulette');
 
+function handleAlreadyCalledName(allNamesListCopy, chosenName) {
+	let namesAlreadyCalled = [];
+	namesAlreadyCalled.push(chosenName);
+	allNamesListCopy.splice(allNamesListCopy.indexOf(chosenName), 1);
+	return allNamesListCopy;
+}
+
 button.addEventListener('click', () => {
 	let chosenIndex = Math.floor(Math.random() * config.names.length);
-	let nameList = constructNames(chosenIndex, config.names, config.sillyNames);
-	shuffle(nameList);
+	let nameList = constructNames(chosenIndex, studentNames, sillyNames);
+	let allNamesListCopy = [...allNamesList];
+	shuffle(nameList, chosenName => {
+		allNamesList = handleAlreadyCalledName(allNamesListCopy, chosenName); // after name is picked remove it from shuffle list
+		if (allNamesList.length == 5) {
+			// if only sillyNames are left, reset the list
+			allNamesList = [...studentNames, ...sillyNames];
+		}
+	});
 });
