@@ -2,16 +2,18 @@
 // Given a selected index and config, construct an array of names to
 // flash on the screen that concludes with the name at the chosenIndex.
 // If sillyNames exists, occationally pick one an insert it as the
-// penultimate name.
+// penultimate name. 
+// Once a name is chosen, it's removed from the array.
+// If only 'sillyNames' remain, the array is reset.
 
 const sillyNames = config.sillyNames;
 const studentNames = config.names;
 let allNamesList = [...studentNames, ...sillyNames];
 
-function constructNames(chosenIndex, names, sillyNames) {
+function constructNames(chosenIndex, currentNamesList) {
 	const LIST_LENGTH = 100;
-	let namesCopy = allNamesList.filter(studentName => names.includes(studentName));
-	let sillyNamesCopy = allNamesList.filter(studentName => sillyNames.includes(studentName));
+	let namesCopy = currentNamesList.filter(studentName => studentNames.includes(studentName));
+	let sillyNamesCopy = currentNamesList.filter(studentName => sillyNames.includes(studentName));
 	let chooseSillyName = Math.random() > 0.8 && sillyNamesCopy.length;
 	let sillyName = '';
 	if (chooseSillyName) {
@@ -49,19 +51,12 @@ function shuffle(names, callback) {
 
 let button = document.querySelector('#roulette');
 
-function handleAlreadyCalledName(allNamesListCopy, chosenName) {
-	let namesAlreadyCalled = [];
-	namesAlreadyCalled.push(chosenName);
-	allNamesListCopy.splice(allNamesListCopy.indexOf(chosenName), 1);
-	return allNamesListCopy;
-}
-
 button.addEventListener('click', () => {
 	let chosenIndex = Math.floor(Math.random() * config.names.length);
-	let nameList = constructNames(chosenIndex, studentNames, sillyNames);
+	let nameList = constructNames(chosenIndex, allNamesList);
 	let allNamesListCopy = [...allNamesList];
 	shuffle(nameList, chosenName => {
-		allNamesList = handleAlreadyCalledName(allNamesListCopy, chosenName); // after name is picked remove it from shuffle list
+		allNamesList = allNamesListCopy.filter(studentName => studentName != chosenName); // after name is picked remove it from shuffle list
 		if (allNamesList.length == 5) {
 			// if only sillyNames are left, reset the list
 			allNamesList = [...studentNames, ...sillyNames];
